@@ -1,9 +1,12 @@
 import os
+import time
 import torch
 from torch import optim, nn, utils, Tensor
 from torchvision.datasets import MNIST
 from torchvision.transforms import ToTensor
 import lightning.pytorch as pl
+
+start = time.time()
 
 # define any number of nn.Modules (or use your current ones)
 encoder = nn.Sequential(nn.Linear(28 * 28, 64), nn.ReLU(), nn.Linear(64, 3))
@@ -58,3 +61,6 @@ encoder.eval()
 fake_image_batch = torch.rand(4, 28 * 28, device=autoencoder.device)
 embeddings = encoder(fake_image_batch)
 print("⚡" * 20, "\nPredictions (4 image embeddings):\n", embeddings, "\n", "⚡" * 20)
+
+end = time.time()
+print("Total time:", end - start)
