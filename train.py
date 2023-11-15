@@ -8,9 +8,31 @@ import lightning.pytorch as pl
 
 start = time.time()
 
-# define any number of nn.Modules (or use your current ones)
-encoder = nn.Sequential(nn.Linear(28 * 28, 64), nn.ReLU(), nn.Linear(64, 3))
-decoder = nn.Sequential(nn.Linear(3, 64), nn.ReLU(), nn.Linear(64, 28 * 28))
+# small model
+# encoder = nn.Sequential(nn.Linear(28 * 28, 64), nn.ReLU(), nn.Linear(64, 3))
+# decoder = nn.Sequential(nn.Linear(3, 64), nn.ReLU(), nn.Linear(64, 28 * 28))
+
+
+# big model
+encoder = nn.Sequential(
+    nn.Linear(28 * 28, 128),  # Increase to 128 neurons
+    nn.ReLU(),
+    nn.Linear(128, 2048),      # Add another layer with 256 neurons
+    nn.ReLU(),
+    nn.Linear(2048, 128),      # Add another layer stepping down
+    nn.ReLU(),
+    nn.Linear(128, 3)
+)
+
+decoder = nn.Sequential(
+    nn.Linear(3, 128),       # Increase to 128 neurons
+    nn.ReLU(),
+    nn.Linear(128, 2048),     # Add another layer with 256 neurons
+    nn.ReLU(),
+    nn.Linear(2048, 128),     # Step down through another 128 neuron layer
+    nn.ReLU(),
+    nn.Linear(128, 28 * 28)  # Output layer size remains the same
+)
 
 
 # define the LightningModule
@@ -42,25 +64,11 @@ autoencoder = LitAutoEncoder(encoder, decoder)
 
 # setup data
 dataset = MNIST(os.getcwd(), download=True, transform=ToTensor())
-train_loader = utils.data.DataLoader(dataset)
+train_loader = utils.data.DataLoader(dataset, num_workers=16)
 
 # train the model (hint: here are some helpful Trainer arguments for rapid idea iteration)
-num_gpus = torch.cuda.device_count()
-trainer = pl.Trainer(limit_train_batches=100, max_epochs=100, devices=num_gpus, strategy="ddp")
+trainer = pl.Trainer(limit_train_batches=100, max_epochs=10, accelerator='gpu', devices='auto', strategy="ddp")
 trainer.fit(model=autoencoder, train_dataloaders=train_loader)
-
-# load checkpoint
-checkpoint = "./lightning_logs/version_0/checkpoints/epoch=0-step=100.ckpt"
-autoencoder = LitAutoEncoder.load_from_checkpoint(checkpoint, encoder=encoder, decoder=decoder)
-
-# choose your trained nn.Module
-encoder = autoencoder.encoder
-encoder.eval()
-
-# embed 4 fake images!
-fake_image_batch = torch.rand(4, 28 * 28, device=autoencoder.device)
-embeddings = encoder(fake_image_batch)
-print("⚡" * 20, "\nPredictions (4 image embeddings):\n", embeddings, "\n", "⚡" * 20)
 
 end = time.time()
 print("Total time:", end - start)
