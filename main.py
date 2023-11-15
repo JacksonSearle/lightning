@@ -42,7 +42,8 @@ dataset = MNIST(os.getcwd(), download=True, transform=ToTensor())
 train_loader = utils.data.DataLoader(dataset)
 
 # train the model (hint: here are some helpful Trainer arguments for rapid idea iteration)
-trainer = pl.Trainer(limit_train_batches=100, max_epochs=1)
+num_gpus = torch.cuda.device_count()
+trainer = pl.Trainer(limit_train_batches=100, max_epochs=100, devices=num_gpus)
 trainer.fit(model=autoencoder, train_dataloaders=train_loader)
 
 # load checkpoint
